@@ -1,0 +1,247 @@
+CREATE TABLE [Enrollment] (
+  [EnrollmentID] int not null PRIMARY KEY IDENTITY(1, 1),
+  [ParticipantID] int not null,
+  [ConferenceID] int not null,
+  [DetailsID] int not null,
+  [WorkshopID] int,
+  [Date] datetime DEFAULT GETDATE(),
+  [PaymentID] int,
+  [PaymentDueTo] datetime,
+  [Status] varchar(18) DEFAULT 'Valid',
+  CHECK (Status IN ('Valid', 'Cancelled')),
+)
+GO
+
+CREATE TABLE [Payments] (
+  [PaymentID] int not null PRIMARY KEY IDENTITY(1, 1),
+  [EnrollmentID] int not null,
+  [ParticipantFirstName] varchar(50) not null
+  CONSTRAINT ParticipantFirstName CHECK (ParticipantFirstName NOT LIKE '%[^A-Z]%'),
+  [ParticipantLastName] varchar(50) not null
+  CONSTRAINT ParticipantLastName CHECK (ParticipantLastName NOT LIKE '%[^A-Z]%'),
+  [ClientFirstName] varchar(50) not null
+  CONSTRAINT ClientFirstName CHECK (ClientFirstName NOT LIKE '%[^A-Z]%'),
+  [ClientLastName] varchar(50) not null
+  CONSTRAINT ClientLastName CHECK (ClientLastName NOT LIKE '%[^A-Z]%'),
+  [Price] int not null,
+  [DatePaid] datetime DEFAULT GETDATE()
+)
+GO
+
+CREATE TABLE [Participants] (
+  [ParticipantID] int not null PRIMARY KEY IDENTITY(1, 1),
+  [ClientID] int not null,
+  [FirstName] varchar(50)
+  CONSTRAINT P_FirstName CHECK (FirstName NOT LIKE '%[^A-Z]%'),
+  [LastName] varchar(50)
+  CONSTRAINT P_LastName CHECK (LastName NOT LIKE '%[^A-Z]%'),
+  [Mail] varchar(100)
+  CONSTRAINT P_Mail CHECK (Mail NOT LIKE '%[^a-zA-z0-9\@\.]%'),
+  [Phone] varchar(12)
+ CONSTRAINT P_Phone CHECK (Phone NOT LIKE '%[^\+0-9]%' or Phone like '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]')
+)
+GO
+
+CREATE TABLE [Clients] (
+  [ClientID] int not null PRIMARY KEY IDENTITY(1, 1),
+  [CompanyName] varchar(100),
+  [FirstName] varchar(50) not null
+  CONSTRAINT C_FirstName CHECK (FirstName NOT LIKE '%[^A-Z]%'),
+  [LastName] varchar(50) not null
+  CONSTRAINT C_LastName CHECK (LastName NOT LIKE '%[^A-Z]%'),
+  [City] varchar(50) not null
+  CONSTRAINT C_City CHECK (City NOT LIKE '%[^a-zA-z\ ]%'),
+  [Country] varchar(50) not null
+  CONSTRAINT C_Country CHECK (Country NOT LIKE '%[^a-zA-z\ ]%'),
+  [Mail] varchar(100) not null
+  CONSTRAINT C_Mail CHECK (Mail NOT LIKE  '%[^a-zA-z0-9\@\.]%') ,
+  [Phone] varchar(12) not null
+ CONSTRAINT C_Phone CHECK (Phone NOT LIKE '%[^\+0-9]%' or Phone like '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]')
+)
+GO
+
+CREATE TABLE [Conferences] (
+  [ConferenceID] int not null PRIMARY KEY IDENTITY(1, 1),
+  [Name] varchar(200) not null
+  CONSTRAINT Conf_Name CHECK (Name NOT LIKE '%[^a-zA-z0-9\.\ ]%'),
+  [StartDate] datetime not null,
+  [EndDate] datetime not null
+)
+GO
+
+CREATE TABLE [ConferenceDetails] (
+  [DetailsID] int not null PRIMARY KEY IDENTITY(1, 1),
+  [ConferenceID] int not null,
+  [PresenterID] int not null,
+  [Date] datetime not null,
+  [Participants] int not null,
+  [Price] int not null
+)
+GO
+
+CREATE TABLE [Workshops] (
+  [WorkshopID] int not null PRIMARY KEY IDENTITY(1, 1),
+  [Name] varchar(200) not null
+  CONSTRAINT Work_Name CHECK (Name NOT LIKE '%[^a-zA-z0-9\.\ ]%'),
+  [DetailsID] int not null,
+  [PresenterID] int not null,
+  [Participants] int not null,
+  [Date] datetime not null,
+  [Price] int not null,
+  [RoomReservationID] int
+)
+GO
+
+CREATE TABLE [Presenters] (
+  [PresenterID] int not null PRIMARY KEY IDENTITY(1, 1),
+  [FirstName] varchar(50) not null
+  CONSTRAINT Pr_FirstName CHECK (FirstName NOT LIKE '%[^A-Z]%'),
+  [LastName] varchar(50) not null
+  CONSTRAINT Pr_LastName CHECK (LastName NOT LIKE '%[^A-Z]%'),
+  [Street] varchar(100) not null
+  CONSTRAINT Pr_Street CHECK (Street NOT LIKE '%[^a-zA-z0-9\.\ ]%'),
+  [City] varchar(50) not null
+  CONSTRAINT Pr_City CHECK (City NOT LIKE '%[^a-zA-z\ ]%'),
+  [Country] varchar(50) not null
+ CONSTRAINT Pr_Country CHECK (Country NOT LIKE '%[^a-zA-z\ ]%'),
+  [Mail] varchar(100) not null
+  CONSTRAINT Pr_Mail CHECK (Mail NOT LIKE '%[^a-zA-z0-9\@\.]%') ,
+  [Phone] varchar(12) not null
+  CONSTRAINT Pr_Phone CHECK (Phone NOT LIKE '%[^\+0-9]%' or Phone like '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]')
+)
+GO
+
+CREATE TABLE [RoomReservation] (
+  [ReservationID] int not null PRIMARY KEY IDENTITY(1, 1),
+  [PresenterID] int not null,
+  [Room] varchar(18) DEFAULT 'No room assigned',
+  CHECK (Room IN ('Room 1', 'Room 2', 'Room 3', 'Room 4', 'Room 5', 'Room 6', 'Room 7', 'Room 8', 'Room 9', 'Room 10', 'Room 11', 'Room 12', 'Room 13', 'Room 14', 'Room 15', 'Room 16', 'No room assigned')),
+  [Date] datetime not null
+)
+GO
+
+-- foreign keys
+
+ALTER TABLE [Enrollment] ADD FOREIGN KEY ([ParticipantID]) REFERENCES [Participants] ([ParticipantID])
+GO
+
+ALTER TABLE [Enrollment] ADD FOREIGN KEY ([ConferenceID]) REFERENCES [Conferences] ([ConferenceID])
+GO
+
+ALTER TABLE [Enrollment] ADD FOREIGN KEY ([WorkshopID]) REFERENCES [Workshops] ([WorkshopID])
+GO
+
+ALTER TABLE [Enrollment] ADD FOREIGN KEY ([PaymentID]) REFERENCES [Payments] ([PaymentID])
+GO
+
+ALTER TABLE [Payments] ADD FOREIGN KEY ([EnrollmentID]) REFERENCES [Enrollment] ([EnrollmentID])
+GO
+
+ALTER TABLE [Participants] ADD FOREIGN KEY ([ClientID]) REFERENCES [Clients] ([ClientID])
+GO
+
+ALTER TABLE [ConferenceDetails] ADD FOREIGN KEY ([ConferenceID]) REFERENCES [Conferences] ([ConferenceID])
+GO
+
+ALTER TABLE [ConferenceDetails] ADD FOREIGN KEY ([PresenterID]) REFERENCES [Presenters] ([PresenterID])
+GO
+
+ALTER TABLE [Workshops] ADD FOREIGN KEY ([DetailsID]) REFERENCES [ConferenceDetails] ([DetailsID])
+GO
+
+ALTER TABLE [Workshops] ADD FOREIGN KEY ([PresenterID]) REFERENCES [Presenters] ([PresenterID])
+GO
+
+ALTER TABLE [Workshops] ADD FOREIGN KEY ([RoomReservationID]) REFERENCES [RoomReservation] ([ReservationID])
+GO
+
+ALTER TABLE [RoomReservation] ADD FOREIGN KEY ([PresenterID]) REFERENCES [Presenters] ([PresenterID])
+GO
+
+-- uniqueness
+
+ALTER TABLE [Clients] ADD CONSTRAINT C_MAIL_UNIQ UNIQUE (Mail)
+GO
+
+ALTER TABLE [Clients] ADD CONSTRAINT C_PHONE_UNIQ UNIQUE (Phone)
+GO
+
+ALTER TABLE [Presenters] ADD CONSTRAINT PR_MAIL_UNIQ UNIQUE (Mail)
+GO
+
+ALTER TABLE [Presenters] ADD CONSTRAINT PR_PHONE_UNIQ UNIQUE (Phone)
+GO
+
+ALTER TABLE [ConferenceDetails] ADD CONSTRAINT ONE_CONF_PER_DAY UNIQUE (Date)
+GO
+
+CREATE UNIQUE INDEX SINGLE_ENR_WORKSHOP ON Enrollment(ParticipantID, WorkshopID)
+WHERE WorkshopID is not null
+
+CREATE UNIQUE INDEX SINGLE_ENR_CONF_DAY ON Enrollment(ParticipantID, DetailsID)
+where WorkshopID is null
+
+ALTER TABLE [Payments] ADD CONSTRAINT ONE_PAYMENT_PER_ENR UNIQUE (EnrollmentID)
+GO
+
+CREATE UNIQUE INDEX ROOM_RESER_UNIQ ON Workshops(RoomReservationID)
+WHERE Workshops.RoomReservationID is not null
+
+CREATE UNIQUE INDEX NO_PRESENTER_SPLITTING ON RoomReservation(PresenterID, Date)
+
+CREATE UNIQUE INDEX ROOM_TAKEN ON RoomReservation(Room, Date)
+WHERE RoomReservation.Room <> 'No room assigned'
+
+-- ensuring no past event is created
+
+ALTER TABLE [Enrollment] ADD CONSTRAINT ENR_NOT_PAST CHECK (DATEDIFF(day, getdate(), Date) >= 0)
+GO
+
+ALTER TABLE [Conferences] ADD CONSTRAINT CONF_START_NOT_PAST CHECK (DATEDIFF(day, getdate(), StartDate) >= 0)
+GO
+
+ALTER TABLE [Conferences] ADD CONSTRAINT CONF_END_NOT_PAST CHECK (DATEDIFF(day, getdate(), EndDate) >= 0)
+GO
+
+ALTER TABLE [ConferenceDetails] ADD CONSTRAINT CONF_NOT_PAST CHECK (DATEDIFF(day, getdate(), Date) >= 0)
+GO
+
+ALTER TABLE [Workshops] ADD CONSTRAINT WORK_NOT_PAST CHECK (DATEDIFF(day, getdate(), Date) >= 0)
+GO
+
+ALTER TABLE [RoomReservation] ADD CONSTRAINT ROOM_NOT_PAST CHECK (DATEDIFF(day, getdate(), Date) >= 0)
+GO
+
+--no future payments
+
+ALTER TABLE [Payments] ADD CONSTRAINT PAY_NOW_NOT_IN_FUTURE CHECK (DATEDIFF(second, getdate(), DatePaid) <= 0)
+GO
+
+-- ensuring no price is negative
+
+ALTER TABLE [Payments] ADD CONSTRAINT PAID_NOT_ZERO CHECK (Price > 0)
+GO
+
+ALTER TABLE [ConferenceDetails] ADD CONSTRAINT CONF_PRICE_NOT_NEGATIVE CHECK (Price > 0)
+GO
+
+ALTER TABLE [Workshops] ADD CONSTRAINT WORK_PRICE_NOT_NEGATIVE CHECK  (Price >= 0)
+GO
+
+-- checking limits
+
+ALTER TABLE [Conferences] ADD CONSTRAINT CONF_LEN CHECK (DATEDIFF(day, StartDate, EndDate) BETWEEN 0 AND 11)
+GO
+
+ALTER TABLE [ConferenceDetails] ADD CONSTRAINT CONF_PART_LIMIT CHECK (Participants BETWEEN 1 AND 10000)
+GO
+
+ALTER TABLE [Workshops] ADD CONSTRAINT WORK_PART_LIMIT CHECK (Participants BETWEEN 1 AND 10000)
+GO
+
+-- being nice to clients
+
+ALTER TABLE [Enrollment] ADD CONSTRAINT GIVE_PAYER_SOME_TIME CHECK (DATEDIFF(hour, Date, PaymentDueTo) >= 24)
+GO
+
+
