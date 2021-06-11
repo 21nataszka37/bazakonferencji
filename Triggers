@@ -1,0 +1,349 @@
+--setting PaymentDueTo in Enrollment
+create trigger PaymentDueToDate on Enrollment after insert
+as
+begin
+if (select count(*) from inserted) > 1
+begin
+raiserror('Only one row modification allowed', 15, 1)
+rollback
+return
+end
+
+declare @Date datetime
+declare @EnrollmentID int
+declare @ConferenceDate datetime
+declare @ConferenceID int
+set @Date = (select Date from inserted)
+set @EnrollmentID = (select EnrollmentID from inserted)
+set @ConferenceID= (select ConferenceID from inserted)
+set @ConferenceDate= ( select StartDate from Conferences where Conferences.ConferenceID= @ConferenceID)
+
+if  datediff(day, @Date, @ConferenceDate) > 7
+begin
+update Enrollment 
+set PaymentDueTo= dateadd(DD, -7, @ConferenceDate)
+where EnrollmentID=@EnrollmentID
+end
+
+if  datediff(day, @Date, @ConferenceDate) > 3
+begin
+update Enrollment 
+set PaymentDueTo= dateadd(DD, 3, @Date)
+where EnrollmentID=@EnrollmentID
+end
+
+if  datediff(day, @Date, @ConferenceDate) < 4
+begin
+update Enrollment 
+set PaymentDueTo= dateadd(DD, 1, @Date)
+where EnrollmentID=@EnrollmentID
+end
+end
+
+
+--participants limits- conferences
+create trigger ConferenceLimits on Enrollment after insert
+as
+begin
+if (select count(*) from inserted) > 1
+begin
+raiserror('Only one row modification allowed', 15, 1)
+rollback
+return
+end
+
+declare @Participants int
+declare @DetailsID int
+declare @People int
+set @DetailsID= (select DetailsID from inserted)
+set @Participants= (select Participants from ConferenceDetails where DetailsID= @DetailsID)
+set @People = (select count(distinct ParticipantID) from Enrollment where DetailsID= @DetailsID)
+
+if  (@Participants-@People)<0
+begin
+raiserror('No more tickets left for the conference day given', 2,1)
+rollback
+return
+end
+end
+
+--participants limits- workshops
+create trigger WorkshopsLimits on Enrollment after insert
+as
+begin
+if (select count(*) from inserted) > 1
+begin
+raiserror('Only one row modification allowed', 15, 1)
+rollback
+return
+end
+
+declare @Participants int
+declare @WorkshopID int
+declare @People int
+set @WorkshopID= (select WorkshopID from inserted)
+if @WorkshopID is not null
+begin
+set @Participants= ( select Participants from Workshops  where WorkshopID= @WorkshopID)
+set @People = ( select count(WorkshopID) from Enrollment where WorkshopID= @WorkshopID)
+
+
+if  (@Participants-@People)<1
+begin
+raiserror('No more tickets left for the workshop given', 3, 1)
+rollback
+return
+end
+end
+end
+
+--adherence to deadlines- conferences
+create trigger ConferenceDates on ConferenceDetails after insert
+as
+begin
+if (select count(*) from inserted) > 1
+begin
+raiserror('Only one row modification allowed', 15, 1)
+rollback
+return
+end
+
+declare @ConferenceID int
+declare @DetailsID int
+declare @Date datetime
+set @ConferenceID= (select ConferenceID from inserted)
+set @DetailsID= ( select DetailsID from inserted)
+set @Date= ( select Date from inserted )
+
+
+if  @Date not between (select StartDate from Conferences where ConferenceID= @ConferenceID) and (select EndDate from Conferences where ConferenceID= @ConferenceID) 
+begin
+raiserror('the date is not included within the conference dates', 4, 1)
+rollback
+return
+end
+end
+
+--terms integrity
+create trigger WorkshopDates on Workshops after insert
+as
+begin
+if (select count(*) from inserted) > 1
+begin
+raiserror('Only one row modification allowed', 15, 1)
+rollback
+return
+end
+
+
+
+declare @WorkshopID int
+declare @DetailsID int
+declare @Date datetime
+declare @DetailsDate datetime
+set @WorkshopID= (select WorkshopID from inserted)
+set @DetailsID= (select DetailsID from inserted)
+set @Date= (select Date from inserted )
+set @DetailsDate= (select Date from ConferenceDetails where DetailsID=@DetailsID)
+
+
+if (year(@Date) <> year(@DetailsDate)) or (month(@Date) <> month(@DetailsDate)) or (day(@Date) <> day(@DetailsDate))
+begin
+declare @DetailsDateText varchar(30)
+set @DetailsDateText = cast(@DetailsDate as varchar)
+raiserror('Workshop date is different than conference day date. Expected date: %s' , 5, 1, @DetailsDateText)
+rollback
+return
+end
+end
+
+--reservation integrity
+create trigger RoomsIntegrity on Workshops after insert
+as
+begin
+if (select count(*) from inserted) > 1
+begin
+raiserror('Only one row modification allowed', 15, 1)
+rollback
+return
+end
+
+declare @ReservationID int
+declare @WorkshopID int
+declare @RoomDate datetime
+declare @WorkshopDate datetime
+set @WorkshopID= (select WorkshopID from inserted)
+set @ReservationID= ( select RoomReservationID from inserted)
+set @RoomDate= (select Date from RoomReservation where RoomReservation.ReservationID = @ReservationID)
+set @WorkshopDate= (select Date from inserted)
+
+
+if  @WorkshopDate <> @RoomDate
+begin
+raiserror('This room had been reserved on a different date!', 6, 1)
+rollback
+return
+end
+end
+
+--automatic PaymentID
+create trigger PaymentID_auto_insert on Payments after insert
+as
+begin
+if (select count(*) from inserted) > 1
+begin
+raiserror('Only one row modification allowed', 15, 1)
+rollback
+return
+end
+
+declare @PaymentID int
+declare @EnrollmentID int
+set @PaymentID = (select PaymentID from inserted)
+set @EnrollmentID = (select EnrollmentID from inserted)
+update Enrollment
+set PaymentID = @PaymentID
+where EnrollmentID = @EnrollmentID
+end
+
+-one conference in one day
+create trigger Conference_Date_Check on Conferences after insert, update as
+begin
+declare @StartDate datetime
+declare @EndDate datetime
+declare @ConferenceNumber int
+set @StartDate = (select StartDate from inserted)
+set @EndDate = (select EndDate from inserted)
+set @ConferenceNumber =  (select count(ConferenceID) from Conferences
+where datediff(day, '1970-01-01', @StartDate) between datediff(day, '1970-01-01', StartDate) and datediff(day, '1970-01-01', EndDate)
+or datediff(day, '1970-01-01', @EndDate) between datediff(day, '1970-01-01', StartDate) and datediff(day, '1970-01-01', EndDate))
+if @ConferenceNumber > 1
+begin
+raiserror('There is already a conference during given time slot', 8, 1)
+rollback
+return
+end
+end
+
+-checking participants limits
+create trigger Conference_Date_Check on Conferences after insert, update as
+begin
+declare @StartDate datetime
+declare @EndDate datetime
+declare @ConferenceNumber int
+set @StartDate = (select StartDate from inserted)
+set @EndDate = (select EndDate from inserted)
+set @ConferenceNumber =  (select count(ConferenceID) from Conferences
+where datediff(day, '1970-01-01', @StartDate) between datediff(day, '1970-01-01', StartDate) and datediff(day, '1970-01-01', EndDate)
+or datediff(day, '1970-01-01', @EndDate) between datediff(day, '1970-01-01', StartDate) and datediff(day, '1970-01-01', EndDate))
+if @ConferenceNumber > 1
+begin
+raiserror('There is already a conference during given time slot', 8, 1)
+rollback
+return
+end
+end
+
+-enrollment integrity
+create trigger Conference_and_Workshop_Check on Enrollment after insert, update
+as
+begin
+if (select count(*) from inserted) > 1
+begin
+raiserror('Only one row modification allowed', 10, 1)
+rollback
+return
+end
+
+declare @WorkshopID int
+declare @DetailsID int
+set @WorkshopID = (select WorkshopID from inserted)
+set @DetailsID = (select DetailsID from inserted)
+if (@DetailsID <> (select DetailsID from Workshops where WorkshopID = @WorkshopID) and @WorkshopID is not null)
+begin
+raiserror('Wrong conference day for this workshop', 10, 1)
+rollback
+return
+end
+
+declare @ConferenceID int
+set @ConferenceID = (select ConferenceID from inserted)
+if (@ConferenceID <> (select ConferenceID from ConferenceDetails where DetailsID = @DetailsID))
+begin
+raiserror('This conference day does not belong to given conference', 10, 1)
+rollback
+return
+end
+end
+
+--Payment data integrity
+create trigger Overall_Payment_Insert_Check on Payments after insert, update
+as
+begin
+if (select count(*) from inserted) > 1
+begin
+raiserror('Only one row modification allowed', 15, 1)
+rollback
+return
+end
+
+declare @EnrollmentID int
+set @EnrollmentID = (select EnrollmentID from inserted)
+declare @ParticipantFName varchar(50)
+set @ParticipantFName = (select ParticipantFirstName from inserted)
+declare @ParticipantLName varchar(50)
+set @ParticipantLName = (select ParticipantLastName from inserted)
+declare @ClientFName varchar(50)
+set @ClientFName = (select ClientFirstName from inserted)
+declare @ClientLName varchar (50)
+set @ClientLName = (select ClientLastName from inserted)
+declare @Price int
+set @Price = (select Price from inserted)
+
+if (@ParticipantFName <> (select FirstName from Participants where ParticipantID in (select distinct ParticipantID from Enrollment where EnrollmentID = @EnrollmentID)))
+begin
+raiserror('Wrong participant first name, please double check', 11, 1)
+rollback
+return
+end
+
+if (@ParticipantLName <> (select LastName from Participants where ParticipantID in (select distinct ParticipantID from Enrollment where EnrollmentID = @EnrollmentID)))
+begin
+raiserror('Wrong participant last name, please double check', 11, 1)
+rollback
+return
+end
+
+if (@ClientFName <> (select FirstName from Clients where ClientID in (select distinct ClientID from Participants where ParticipantID in (select distinct ParticipantID from Enrollment where EnrollmentID = @EnrollmentID))))
+begin
+raiserror('Wrong client first name, please double check', 11, 1)
+rollback
+return
+end
+
+if (@ClientLName <> (select LastName from Clients where ClientID in (select distinct ClientID from Participants where ParticipantID in (select distinct ParticipantID from Enrollment where EnrollmentID = @EnrollmentID))))
+begin
+raiserror('Wrong client last name, please double check', 11, 1)
+rollback
+return
+end
+
+declare @ExpectedPrice int
+set @ExpectedPrice = (
+select (CD.Price + isnull(W.Price, 0)) from Enrollment
+join ConferenceDetails as CD on CD.DetailsID = Enrollment.DetailsID
+left join Workshops as W on W.WorkshopID = Enrollment.WorkshopID
+where EnrollmentID = @EnrollmentID)
+
+if (@Price <> @ExpectedPrice)
+begin
+raiserror('Wrong price, expected price is: %d. Please double check', 12, 1, @ExpectedPrice)
+rollback
+return
+end
+end
+
+
+
+
+
