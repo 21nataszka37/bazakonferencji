@@ -1,0 +1,99 @@
+--list of reservations for a week 
+CREATE VIEW WeeklyRoomReservation AS
+SELECT * FROM RoomReservation
+WHERE Date >= getdate() AND Date <= getdate() + 7
+
+--basic list of presenters
+CREATE VIEW BasicPresenterInfo AS
+select PresenterID, FirstName, LastName from Presenters
+
+-Participants data 
+CREATE FUNCTION Participant_Enroll_View(@ParticipantID int)
+returns table
+AS return (
+        SELECT FirstName, LastName, Mail, Phone, Conferences.Name as ConferenceName, Workshops.Name as WorkshopName FROM Participants
+        JOIN Enrollment ON Enrollment.ParticipantID = Participants.ParticipantID
+        JOIN Conferences ON Conferences.ConferenceID = Enrollment.ConferenceID
+        LEFT JOIN Workshops ON Workshops.WorkshopID = Enrollment.WorkshopID
+        WHERE Participants.ParticipantID=@ParticipantID)
+
+--list of workshops for conference
+CREATE FUNCTION Workshops_List (@ConferenceID int)
+returns table
+AS return (
+select (select Name from Conferences where ConferenceID = @ConferenceID) as ConferenceName, Name as WorkshopName,
+(select FirstName + ' ' + LastName from Presenters as P where P.PresenterID = W.PresenterID) as Presenter, Date,
+(Participants - (select count(ParticipantID) from Enrollment as E where W.WorkshopID = E.WorkshopID)) as AvailableSeats from Workshops as W
+where WorkshopID in (
+select WorkshopID from Workshops
+where DetailsID in (
+select DetailsID from ConferenceDetails
+where ConferenceID = @ConferenceID)))
+
+--list of participants signed by client for conference/ workshop
+--for conerence 
+CREATE FUNCTION Participants_On_Conference (@ClientID int, @ConferenceID int)
+returns table
+AS return (
+SELECT distinct (FirstName + ' ' + LastName) as Name FROM Participants
+JOIN Enrollment ON Enrollment.ParticipantID = Participants.ParticipantID
+WHERE Enrollment.ConferenceID = @ConferenceID AND Participants.ClientID = @ClientID)
+
+-- for workshop
+CREATE FUNCTION Participants_On_Workshop (@ClientID int, @WorkshopID int)
+returns table
+AS return (
+SELECT DISTINCT (FirstName+ ‘ ‘+  LastName) as Name FROM Participants
+JOIN Enrollment ON Enrollment.ParticipantID = Participants.ParticipantID
+WHERE Enrollment.WorkshopID = @WorkshopID AND Participants.ClientID = @ClientID)
+
+--list of aviliable conferences
+CREATE VIEW AvailableConferences AS
+select (select Name from Conferences as C where C.ConferenceID = CD.ConferenceID) as ConferenceName,
+(select (CD.Participants - (select count(ParticipantID) from Enrollment as E where CD.DetailsID = E.DetailsID))) as AvailableSeats, CD.Date,
+(select FirstName + ' ' + LastName from Presenters as P where CD.PresenterID = P.PresenterID) as Presenter, Price
+from ConferenceDetails as CD
+where CD.Date > getdate() and (select (CD.Participants - (select count(ParticipantID) from Enrollment as E where CD.DetailsID = E.DetailsID))) > 0
+
+--Cleint's data
+CREATE FUNCTION ClientInfo (@ClientID int)
+returns table
+as return (
+with SeatsReserved as (
+select Clients.ClientID as ClientID, count(E.ParticipantID) as SeatsReserved from Clients
+join Participants as P on P.ClientID = Clients.ClientID
+join Enrollment as E on E.ParticipantID = P.ParticipantID
+group by Clients.ClientID),
+LeftToPay as (
+select Clients.ClientID as ClientID, sum((CD.Price + isnull(W.Price, 0))) as LeftToPay from Clients
+join Participants as P on P.ClientID = Clients.ClientID
+join Enrollment as E on E.ParticipantID = P.ParticipantID
+join ConferenceDetails as CD on CD.DetailsID = E.DetailsID
+left join Workshops as W on W.WorkshopID = E.WorkshopID
+where E.PaymentID is null
+group by Clients.ClientID)
+select CompanyName, FirstName, LastName, City, Country, Mail, Phone, isnull(SeatsReserved.SeatsReserved, 0) as SeatsReserved, isnull(LeftToPay.LeftToPay, 0) as LeftToPay from Clients
+left join LeftToPay on LeftToPay.ClientID = Clients.ClientID
+left join SeatsReserved on Clients.ClientID = SeatsReserved.ClientID
+where Clients.ClientID = @ClientID)
+
+-list of participants without full data
+CREATE VIEW ParticipantDataNeeded AS
+SELECT FirstName, LastName, CompanyName, Mail, Phone from Clients
+WHERE ClientID IN (
+SELECT DISTINCT ClientID  from Participants
+WHERE ParticipantID IN (
+SELECT ParticipantID FROM Participants
+WHERE (FirstName is null OR LastName is null OR Mail is null OR Phone is NULL) AND ParticipantID IN(
+SELECT DISTINCT ParticipantID FROM Enrollment
+JOIN Conferences ON Conferences.ConferenceID = Enrollment.ConferenceID
+WHERE (DATEDIFF(day, getdate(), StartDate) <= 14))))
+
+--creating reports- people who did not pay
+CREATE VIEW WhoHasNotPaid AS
+select FirstName, LastName, CompanyName, Mail, Phone from Clients
+WHERE ClientID IN (
+SELECT DISTINCT ClientID FROM Participants
+where ParticipantID in (select ParticipantID from Enrollment where PaymentID is Null))
+
+
