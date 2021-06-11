@@ -18,7 +18,7 @@ set @EnrollmentID = (select EnrollmentID from inserted)
 set @ConferenceID= (select ConferenceID from inserted)
 set @ConferenceDate= ( select StartDate from Conferences where Conferences.ConferenceID= @ConferenceID)
 
-if  datediff(day, @Date, @ConferenceDate) > 7
+if  datediff(day, @Date, @ConferenceDate) > 7  and datediff(day, @Date, @ConferenceDate) <8
 begin
 update Enrollment 
 set PaymentDueTo= dateadd(DD, -7, @ConferenceDate)
