@@ -1,0 +1,100 @@
+--deleting reservations
+--for known ParticipantID:
+	CREATE PROCEDURE CancelEnrollmentOnParticipantID @ParticipantID int AS
+update Enrollment
+	set status=’Cancelled’		
+where ParticipantID=@ParticipantID
+
+--for known ClientID:
+	CREATE PROCEDURE CancelEnrollmentOnClientID @ClientID int AS
+UPDATE Enrollment
+	SET Status = ‘Cancelled’
+	WHERE ParticipantID IN (
+SELECT ParticipantID FROM Participants
+WHERE ClientID = @ClientID)
+
+--for known EnrollmentID:
+	CREATE PROCEDURE CancelEnrollmentOnEnrollmentID @EnrollmentID int AS
+UPDATE Enrollment
+SET Status = ‘Cancelled’
+WHERE EnrollmentID = @EnrollmentID
+GO
+
+--creating reports 
+CREATE PROCEDURE Participants_On_Conference_Day @DetailsID int AS
+select * from Participants 
+where ParticipantID in
+(select distinct ParticipantID from Enrollment 
+where DetailsID=@DetailsID)
+
+CREATE PROCEDURE Participants_On_Workshop @WorkshopID int AS
+select * from Participants 
+where ParticipantID in
+(select distinct ParticipantID from Enrollment 
+where WorkshopID=@WorkshopID)
+
+--creating ID
+CREATE PROCEDURE ParticipantDataForID @ConferenceID int AS 
+SELECT Participants.FirstName, Participants.LastName, Conferences.Name, ConferenceDetails.Date, isnull(CompanyName, Clients.FirstName + ' ' + Clients.LastName) as CompanyName FROM Participants
+JOIN Enrollment ON Enrollment.ParticipantID = Participants.ParticipantID
+JOIN Clients ON Clients.ClientID = Participants.ClientID
+JOIN Conferences ON Enrollment.ConferenceID = Conferences.ConferenceID
+JOIN ConferenceDetails ON ConferenceDetails.DetailsID = Enrollment.DetailsID
+WHERE Enrollment.ConferenceID = @ConferenceID and Enrollment.PaymentID is not null
+
+--list of reserved rooms
+CREATE PROCEDURE WhoReservedRoomThisDay @Date datetime AS
+select RoomReservation.Room, RoomReservation.Date, Presenters.FirstName, Presenters.LastName from RoomReservation
+inner join Presenters on RoomReservation.PresenterID= Presenters.PresenterID
+where year(RoomReservation.Date)= year(@Date) and month(RoomReservation.Date) = month(@Date) and day(RoomReservation.Date) = day(@Date)
+
+--list of participants signed by client
+CREATE PROCEDURE DetailedEnrollmentDataForClient @ClientID int AS
+select FirstName, LastName, Mail, Phone, Conferences.Name, Enrollment.PaymentID, Enrollment.PaymentDueTo from Participants
+JOIN Enrollment ON Enrollment.ParticipantID = Participants.ParticipantID
+JOIN Conferences ON Conferences.ConferenceID = Enrollment.ConferenceID
+where ClientID=@ClientID
+order by PaymentDueTo
+
+--automatic room reservation for a week
+create procedure Reservations_Per_Week AS
+set nocount on
+declare @ReservedDate datetime
+declare @RoomName varchar(10)
+declare @ReservationID int
+while exists (select ReservationID from RoomReservation
+where datediff(day, getdate(), Date) <= 7 and Room like 'No room assigned')
+begin
+set @ReservationID = (select top 1 ReservationID from RoomReservation where datediff(day, getdate(), Date) <= 7 and Room like 'No room assigned')
+set @ReservedDate = (select Date from RoomReservation where ReservationID = @ReservationID);
+with Rooms as (
+select 'Room 1' as RoomAvailable union select 'Room 2' union select 'Room 3' union select 'Room 4' union select 'Room 5' union select 'Room 6' union select 'Room 7'
+ union select 'Room 8' union select 'Room 9' union select 'Room 10' union select 'Room 11' union select 'Room 12' union select 'Room 13'
+ union select 'Room 14' union select 'Room 15' union select 'Room 16'
+ except
+ (select Room from RoomReservation
+where year(Date) = year(@ReservedDate) and month(Date) = month(@ReservedDate) and day(Date) = day(@ReservedDate)))
+update RoomReservation
+set Room = (select top 1 RoomAvailable from Rooms)
+where ReservationID = @ReservationID
+end
+select Presenters.FirstName + ' ' + Presenters.LastName as Presenter, Room, Date from RoomReservation
+join Presenters on Presenters.PresenterID = RoomReservation.PresenterID
+where datediff(day, getdate(), Date) <= 7
+order by Date
+
+
+--list of best clients
+CREATE PROCEDURE BestClient AS
+WITH NearlyDone AS (
+SELECT Participants.ClientID as ClientID, sum(Payments.Price) AS TotalSum FROM Payments
+JOIN Enrollment ON Payments.EnrollmentID = Enrollment.EnrollmentID
+JOIN Participants ON Enrollment.ParticipantID = Participants.ParticipantID
+GROUP BY Participants.ClientID)
+SELECT top 10 Clients.FirstName, Clients.LastName, TotalSum FROM NearlyDone
+JOIN Clients ON NearlyDone.ClientID = Clients.ClientID
+ORDER BY TotalSum DESC
+
+
+
+
