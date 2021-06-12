@@ -61,7 +61,7 @@ set @People = (select count(distinct ParticipantID) from Enrollment where Detail
 
 if  (@Participants-@People)<0
 begin
-raiserror('No more tickets left for the conference day given', 2,1)
+raiserror('No more tickets left for the conference day given', 14,1)
 rollback
 return
 end
@@ -88,9 +88,9 @@ set @Participants= ( select Participants from Workshops  where WorkshopID= @Work
 set @People = ( select count(WorkshopID) from Enrollment where WorkshopID= @WorkshopID)
 
 
-if  (@Participants-@People)<1
+if  (@Participants-@People)<0
 begin
-raiserror('No more tickets left for the workshop given', 3, 1)
+raiserror('No more tickets left for the workshop given', 14, 1)
 rollback
 return
 end
@@ -118,13 +118,13 @@ set @Date= ( select Date from inserted )
 
 if  @Date not between (select StartDate from Conferences where ConferenceID= @ConferenceID) and (select EndDate from Conferences where ConferenceID= @ConferenceID) 
 begin
-raiserror('the date is not included within the conference dates', 4, 1)
+raiserror('The date is not included within the conference dates', 10, 1)
 rollback
 return
 end
 end
 
---terms integrity
+--dates integrity
 create trigger WorkshopDates on Workshops after insert
 as
 begin
@@ -151,7 +151,7 @@ if (year(@Date) <> year(@DetailsDate)) or (month(@Date) <> month(@DetailsDate)) 
 begin
 declare @DetailsDateText varchar(30)
 set @DetailsDateText = cast(@DetailsDate as varchar)
-raiserror('Workshop date is different than conference day date. Expected date: %s' , 5, 1, @DetailsDateText)
+raiserror('Workshop date is different than conference day date. Expected date: %s' , 12, 1, @DetailsDateText)
 rollback
 return
 end
@@ -180,7 +180,7 @@ set @WorkshopDate= (select Date from inserted)
 
 if  @WorkshopDate <> @RoomDate
 begin
-raiserror('This room had been reserved on a different date!', 6, 1)
+raiserror('This room had been reserved on a different date!', 10, 1)
 rollback
 return
 end
@@ -206,7 +206,7 @@ set PaymentID = @PaymentID
 where EnrollmentID = @EnrollmentID
 end
 
--one conference in one day
+--one conference a day
 create trigger Conference_Date_Check on Conferences after insert, update as
 begin
 declare @StartDate datetime
@@ -219,32 +219,30 @@ where datediff(day, '1970-01-01', @StartDate) between datediff(day, '1970-01-01'
 or datediff(day, '1970-01-01', @EndDate) between datediff(day, '1970-01-01', StartDate) and datediff(day, '1970-01-01', EndDate))
 if @ConferenceNumber > 1
 begin
-raiserror('There is already a conference during given time slot', 8, 1)
+raiserror('There is already a conference during given time slot', 14, 1)
 rollback
 return
 end
 end
 
--checking participants limits
-create trigger Conference_Date_Check on Conferences after insert, update as
+--checking participants limits on workshops insert
+create trigger Conference_and_Workshop_Seats_Check on Workshops after insert, update
+as
 begin
-declare @StartDate datetime
-declare @EndDate datetime
-declare @ConferenceNumber int
-set @StartDate = (select StartDate from inserted)
-set @EndDate = (select EndDate from inserted)
-set @ConferenceNumber =  (select count(ConferenceID) from Conferences
-where datediff(day, '1970-01-01', @StartDate) between datediff(day, '1970-01-01', StartDate) and datediff(day, '1970-01-01', EndDate)
-or datediff(day, '1970-01-01', @EndDate) between datediff(day, '1970-01-01', StartDate) and datediff(day, '1970-01-01', EndDate))
-if @ConferenceNumber > 1
+declare @DetailsID int
+declare @Participants int
+set @DetailsID = (select DetailsID from inserted)
+set @Participants = (select Participants from inserted)
+if (@Participants > (select Participants from ConferenceDetails where DetailsID = @DetailsID))
 begin
-raiserror('There is already a conference during given time slot', 8, 1)
+raiserror('Number of participants allowed for a workshop cannot be bigger than number allowed for the conference day', 17, 1)
 rollback
 return
 end
 end
 
--enrollment integrity
+
+--enrollment integrity
 create trigger Conference_and_Workshop_Check on Enrollment after insert, update
 as
 begin
@@ -259,11 +257,14 @@ declare @WorkshopID int
 declare @DetailsID int
 set @WorkshopID = (select WorkshopID from inserted)
 set @DetailsID = (select DetailsID from inserted)
-if (@DetailsID <> (select DetailsID from Workshops where WorkshopID = @WorkshopID) and @WorkshopID is not null)
+if @WorkshopID is not null
+begin
+if (@DetailsID <> (select DetailsID from Workshops where WorkshopID = @WorkshopID))
 begin
 raiserror('Wrong conference day for this workshop', 10, 1)
 rollback
 return
+end
 end
 
 declare @ConferenceID int
@@ -328,13 +329,70 @@ rollback
 return
 end
 
+declare @WorkshopID int
 declare @ExpectedPrice int
+set @WorkshopID = (select WorkshopID from Enrollment where EnrollmentID = @EnrollmentID)
+if @WorkshopID is null
+begin
 set @ExpectedPrice = (
-select (CD.Price + isnull(W.Price, 0)) from Enrollment
+select CD.Price from Enrollment
 join ConferenceDetails as CD on CD.DetailsID = Enrollment.DetailsID
-left join Workshops as W on W.WorkshopID = Enrollment.WorkshopID
 where EnrollmentID = @EnrollmentID)
-
+end
+--when @WorkshopID is not null, we should check whether there is another enrollment, for the same conference day and for the same participant, which has been possibly paid for
+else
+begin
+declare @EarlierConfEnrollment bit
+declare @DetailsID int
+set @DetailsID = (select DetailsID from Enrollment where EnrollmentID = @EnrollmentID)
+if exists (select EnrollmentID from Enrollment where DetailsID = @DetailsID and ParticipantID = (select distinct ParticipantID from Enrollment where EnrollmentID = @EnrollmentID) and EnrollmentID <> @EnrollmentID and Status = 'Valid')
+begin
+set @EarlierConfEnrollment = 'true'
+end
+else
+begin
+set @EarlierConfEnrollment = 'false'
+end
+--if there is no previous enrollment, we should ask the client to pay for both conference and workshop
+if @EarlierConfEnrollment = 0
+begin
+set @ExpectedPrice = (
+select CD.Price + W.Price from Enrollment
+join ConferenceDetails as CD on CD.DetailsID = Enrollment.DetailsID
+join Workshops as W on W.WorkshopID = Enrollment.WorkshopID
+where EnrollmentID = @EnrollmentID)
+end
+--the other case, where there are some previous enrollments for the same participant and conference day
+else
+begin
+--here we check whether the previous enrollment was conference-only: in that case, we prefer to set the price of our enrollment to workshop price only and create a separate payment for the other enrollment
+if exists (select EnrollmentID from Enrollment where DetailsID = @DetailsID and ParticipantID = (select distinct ParticipantID from Enrollment where EnrollmentID = @EnrollmentID) and EnrollmentID <> @EnrollmentID and WorkshopID is null and Status = 'Valid')
+begin
+set @ExpectedPrice = (
+select W.Price from Enrollment
+join Workshops as W on W.WorkshopID = Enrollment.WorkshopID)
+end
+--if there is no conference-only enrollments, we need to find out if the previous enrollment has been paid for or not: in the first case we won't ask client to pay for the same conference day twice
+else
+if exists (select EnrollmentID from Enrollment where DetailsID = @DetailsID and ParticipantID = (select distinct ParticipantID from Enrollment where EnrollmentID = @EnrollmentID) and EnrollmentID <> @EnrollmentID and WorkshopID is not null and PaymentID is null and Status = 'Valid')
+begin
+set @ExpectedPrice = (
+select CD.Price + W.Price from Enrollment
+join ConferenceDetails as CD on CD.DetailsID = Enrollment.DetailsID
+join Workshops as W on W.WorkshopID = Enrollment.WorkshopID
+where EnrollmentID = @EnrollmentID)
+end
+else
+begin
+if exists (select EnrollmentID from Enrollment where DetailsID = @DetailsID and ParticipantID = (select distinct ParticipantID from Enrollment where EnrollmentID = @EnrollmentID) and EnrollmentID <> @EnrollmentID and WorkshopID is not null and PaymentID is not null and Status = 'Valid')
+begin
+set @ExpectedPrice = (
+select W.Price from Enrollment
+join Workshops as W on W.WorkshopID = Enrollment.WorkshopID)
+end
+end
+end
+end
 if (@Price <> @ExpectedPrice)
 begin
 raiserror('Wrong price, expected price is: %d. Please double check', 12, 1, @ExpectedPrice)
