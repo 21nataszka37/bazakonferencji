@@ -7,7 +7,7 @@ WHERE Date >= getdate() AND Date <= getdate() + 7
 CREATE VIEW BasicPresenterInfo AS
 select PresenterID, FirstName, LastName from Presenters
 
--Participants data 
+--Participants data 
 CREATE FUNCTION Participant_Enroll_View(@ParticipantID int)
 returns table
 AS return (
@@ -31,7 +31,7 @@ select DetailsID from ConferenceDetails
 where ConferenceID = @ConferenceID)))
 
 --list of participants signed by client for conference/ workshop
---for conerence 
+--for conference 
 CREATE FUNCTION Participants_On_Conference (@ClientID int, @ConferenceID int)
 returns table
 AS return (
@@ -55,7 +55,7 @@ select (select Name from Conferences as C where C.ConferenceID = CD.ConferenceID
 from ConferenceDetails as CD
 where CD.Date > getdate() and (select (CD.Participants - (select count(ParticipantID) from Enrollment as E where CD.DetailsID = E.DetailsID))) > 0
 
---Cleint's data
+--Client's data
 CREATE FUNCTION ClientInfo (@ClientID int)
 returns table
 as return (
@@ -77,7 +77,7 @@ left join LeftToPay on LeftToPay.ClientID = Clients.ClientID
 left join SeatsReserved on Clients.ClientID = SeatsReserved.ClientID
 where Clients.ClientID = @ClientID)
 
--list of participants without full data
+--list of participants without full data
 CREATE VIEW ParticipantDataNeeded AS
 SELECT FirstName, LastName, CompanyName, Mail, Phone from Clients
 WHERE ClientID IN (
