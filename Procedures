@@ -2,13 +2,13 @@
 --for known ParticipantID:
 	CREATE PROCEDURE CancelEnrollmentOnParticipantID @ParticipantID int AS
 update Enrollment
-	set status=’Cancelled’		
+	set status='Cancelled'		
 where ParticipantID=@ParticipantID
 
 --for known ClientID:
 	CREATE PROCEDURE CancelEnrollmentOnClientID @ClientID int AS
 UPDATE Enrollment
-	SET Status = ‘Cancelled’
+	SET Status = 'Cancelled'
 	WHERE ParticipantID IN (
 SELECT ParticipantID FROM Participants
 WHERE ClientID = @ClientID)
@@ -16,7 +16,7 @@ WHERE ClientID = @ClientID)
 --for known EnrollmentID:
 	CREATE PROCEDURE CancelEnrollmentOnEnrollmentID @EnrollmentID int AS
 UPDATE Enrollment
-SET Status = ‘Cancelled’
+SET Status = 'Cancelled'
 WHERE EnrollmentID = @EnrollmentID
 GO
 
