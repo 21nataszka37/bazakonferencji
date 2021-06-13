@@ -229,13 +229,19 @@ end
 create trigger Conference_and_Workshop_Seats_Check on Workshops after insert, update
 as
 begin
+if (select count(*) from inserted) > 1
+begin
+raiserror('Only one row modification allowed', 15, 1)
+rollback
+return
+end
 declare @DetailsID int
 declare @Participants int
 set @DetailsID = (select DetailsID from inserted)
 set @Participants = (select Participants from inserted)
 if (@Participants > (select Participants from ConferenceDetails where DetailsID = @DetailsID))
 begin
-raiserror('Number of participants allowed for a workshop cannot be bigger than number allowed for the conference day', 17, 1)
+raiserror('Number of participants allowed for a workshop cannot be bigger than number allowed for the conference day', 14, 1)
 rollback
 return
 end
@@ -248,7 +254,7 @@ as
 begin
 if (select count(*) from inserted) > 1
 begin
-raiserror('Only one row modification allowed', 10, 1)
+raiserror('Only one row modification allowed', 15, 1)
 rollback
 return
 end
@@ -395,7 +401,7 @@ end
 end
 if (@Price <> @ExpectedPrice)
 begin
-raiserror('Wrong price, expected price is: %d. Please double check', 12, 1, @ExpectedPrice)
+raiserror('Wrong price, expected price is: %d. Please double check', 11, 1, @ExpectedPrice)
 rollback
 return
 end
