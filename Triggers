@@ -376,7 +376,8 @@ if exists (select EnrollmentID from Enrollment where DetailsID = @DetailsID and 
 begin
 set @ExpectedPrice = (
 select W.Price from Enrollment
-join Workshops as W on W.WorkshopID = Enrollment.WorkshopID)
+join Workshops as W on W.WorkshopID = Enrollment.WorkshopID
+where EnrollmentID = @EnrollmentID)
 end
 --if there is no conference-only enrollments, we need to find out if the previous enrollment has been paid for or not: in the first case we won't ask client to pay for the same conference day twice
 else
@@ -394,7 +395,8 @@ if exists (select EnrollmentID from Enrollment where DetailsID = @DetailsID and 
 begin
 set @ExpectedPrice = (
 select W.Price from Enrollment
-join Workshops as W on W.WorkshopID = Enrollment.WorkshopID)
+join Workshops as W on W.WorkshopID = Enrollment.WorkshopID
+where EnrollmentID = @EnrollmentID)
 end
 end
 end
