@@ -88,7 +88,7 @@ CREATE TABLE [Workshops] (
   [Participants] int not null,
   [Date] datetime not null,
   [Price] int not null,
-  [RoomReservationID] int
+  [RoomReservationID] int not null
 )
 GO
 
