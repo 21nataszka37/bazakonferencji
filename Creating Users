@@ -1,0 +1,26 @@
+create login admin with password = 'supersecretpass'
+    create user admin for login admin
+    
+    create login client1 with password = 'thisismypass'
+    create user client1 for login client1
+
+    create login part1 with password = 'YouWillNeverGuess'
+    create user part1 for login part1
+    
+    create login pres1 with password = 'MyPresentationIsBest'
+    create user pres1 for login pres1
+
+    create login hr1 with password = 'ILoveMyJob'
+    create user hr1 for login hr1
+
+    create login employee1 with password = 'WorkshopsAreBoring'
+    create user employee1 for login employee1
+
+    create login CustServ with password = 'IHaveBestEfficiency'
+    create user CustServ for login CustServ
+
+    create login Krysia with password = 'krysia123'
+    create user Krysia for login Krysia
+
+    create login cleaning with password = 'HooverAllOver'
+    create user cleaning for login cleaning
