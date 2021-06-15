@@ -1,0 +1,35 @@
+ALTER ROLE Administrator
+       ADD MEMBER admin
+       GO
+
+ALTER ROLE Clients
+       ADD MEMBER client1
+       GO
+
+ALTER ROLE Participants
+       ADD MEMBER part1
+       GO
+
+ALTER ROLE Presenters
+       ADD MEMBER pres1
+       GO
+
+ALTER ROLE HR
+       ADD MEMBER hr1
+       GO
+
+ALTER ROLE Employee
+       ADD MEMBER employee1
+       GO
+
+ALTER ROLE CustomerService
+       ADD MEMBER CustServ
+       GO
+
+ALTER ROLE Pani_Krysia
+        ADD MEMBER Krysia
+        GO
+
+ALTER ROLE CleaningService
+       ADD MEMBER cleaning
+       GO
