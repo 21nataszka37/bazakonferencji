@@ -1,0 +1,189 @@
+create role Administrator
+
+GRANT SELECT, INSERT, UPDATE, DELETE, ALTER ON Presenters TO Administrator;
+GRANT SELECT, INSERT, UPDATE, DELETE, ALTER ON Conferences TO Administrator;
+GRANT SELECT, INSERT, UPDATE, DELETE, ALTER ON Workshops TO Administrator;
+GRANT SELECT, INSERT, UPDATE, DELETE, ALTER ON Enrollment TO Administrator;
+GRANT SELECT, INSERT, UPDATE, DELETE, ALTER ON Clients TO Administrator;
+GRANT SELECT, INSERT, UPDATE, DELETE, ALTER ON Participants TO Administrator;
+GRANT SELECT, INSERT, UPDATE, DELETE, ALTER ON Payments TO Administrator;
+GRANT SELECT, INSERT, UPDATE, DELETE, ALTER ON ConferenceDetails TO Administrator;
+GRANT SELECT, INSERT, UPDATE, DELETE, ALTER ON RoomReservation TO Administrator;
+
+GRANT EXECUTE ON CancelEnrollmentOnParticipantID TO Administrator WITH GRANT OPTION;
+GO  
+GRANT EXECUTE ON CancelEnrollmentOnClientID TO Administrator WITH GRANT OPTION;
+GO
+GRANT EXECUTE ON CancelEnrollmentOnEnrollmentID TO Administrator WITH GRANT OPTION;
+GO
+GRANT EXECUTE ON Participants_On_Conference_Day TO Administrator WITH GRANT OPTION;
+GO
+GRANT EXECUTE ON ParticipantDataForID TO Administrator WITH GRANT OPTION;
+GO
+GRANT EXECUTE ON WhoReservedRoomThisDay TO Administrator WITH GRANT OPTION;
+GO
+GRANT EXECUTE ON DetailedEnrollmentDataForClient TO Administrator WITH GRANT OPTION;
+GO
+GRANT EXECUTE ON Reservations_Per_Week TO Administrator WITH GRANT OPTION;
+GO
+GRANT EXECUTE ON BestClient TO Administrator WITH GRANT OPTION;
+GO
+Grant ALL ON WeeklyRoomReservation TO Administrator WITH GRANT OPTION;
+GO
+Grant ALL ON PresentersWeHave TO Administrator WITH GRANT OPTION;
+GO
+Grant ALL ON Participant_Enroll_View TO Administrator WITH GRANT OPTION;
+GO
+Grant ALL ON Workshops_List TO Administrator WITH GRANT OPTION;
+GO
+Grant ALL ON Participants_On_Conference TO Administrator WITH GRANT OPTION;
+GO
+Grant ALL ON AvailableConferences TO Administrator WITH GRANT OPTION;
+GO
+Grant ALL ON ClientInfo TO Administrator WITH GRANT OPTION;
+GO
+Grant ALL ON ParticipantDataNeeded TO Administrator WITH GRANT OPTION;
+GO
+Grant ALL ON WhoHasNotPaid TO Administrator WITH GRANT OPTION;
+GO
+Grant ALL ON Participants_On_Workshop TO Administrator WITH GRANT OPTION;
+GO
+
+
+create role Clients
+
+GRANT EXECUTE ON CancelEnrollmentOnParticipantID TO Clients;  
+GO
+GRANT EXECUTE ON CancelEnrollmentOnClientID TO Clients;  
+GO
+GRANT EXECUTE ON CancelEnrollmentOnEnrollmentID TO Clients;  
+GO
+GRANT EXECUTE ON DetailedEnrollmentDataForClient TO Clients;  
+GO  
+
+Grant SELECT ON Workshops_List TO Clients;
+GO
+Grant SELECT ON Participants_On_Conference TO Clients;
+GO
+Grant SELECT ON AvailableConferences TO Clients;
+GO
+Grant SELECT ON ClientInfo TO Clients;
+GO
+
+
+create role Participants
+
+Grant SELECT ON Participant_Enroll_View TO Participants;
+GO
+Grant SELECT ON Workshops_List TO Participants;
+GO
+Grant SELECT ON AvailableConferences TO Participants;
+GO
+
+
+create role Presenters
+
+GRANT EXECUTE ON Participants_On_Conference_Day TO Presenters;  
+GO
+
+GRANT EXECUTE ON WhoReservedRoomThisDay TO Presenters;  
+GO  
+
+Grant SELECT ON PresentersWeHave TO Presenters;
+GO
+Grant SELECT ON Workshops_List TO Presenters;
+GO
+Grant SELECT ON AvailableConferences TO Presenters;
+GO
+
+Grant SELECT, INSERT, UPDATE, DELETE ON RoomReservation
+     TO Presenters
+GO
+GRANT SELECT ON Participants_On_Workshop TO Presenters;  
+GO
+
+
+
+create role HR
+
+Grant SELECT  ON PresentersWeHave
+    TO HR;
+GO
+
+Grant SELECT, INSERT, UPDATE, DELETE ON Presenters
+     TO HR
+GO
+
+create role Employee
+GRANT EXECUTE ON Participants_On_Conference_Day TO Employee;  
+GO
+
+GRANT EXECUTE ON ParticipantDataForID TO Employee;  
+GO
+GRANT EXECUTE ON WhoReservedRoomThisDay TO Employee;  
+GO
+GRANT EXECUTE ON Reservations_Per_Week TO Employee;  
+GO  
+
+Grant SELECT ON Workshops_List
+    TO Employee;
+GO
+Grant SELECT ON Participants_On_Workshop TO Employee; 
+GO
+Grant SELECT, INSERT, UPDATE ON Conferences TO Employee
+GO
+Grant SELECT, INSERT, UPDATE ON ConferenceDetails TO Employee
+GO
+Grant SELECT, INSERT, UPDATE ON Workshops TO Employee
+GO
+Grant SELECT, INSERT, UPDATE ON RoomReservation TO Employee
+GO
+
+
+create role CustomerService
+GRANT EXECUTE ON CancelEnrollmentOnParticipantID TO CustomerService;  
+GO
+GRANT EXECUTE ON CancelEnrollmentOnClientID TO CustomerService;  
+GO
+GRANT EXECUTE ON CancelEnrollmentOnEnrollmentID TO CustomerService;  
+GO
+GRANT EXECUTE ON DetailedEnrollmentDataForClient TO CustomerService;  
+GO  
+
+Grant SELECT ON PresentersWeHave TO CustomerService;
+GO
+Grant SELECT ON Workshops_List TO CustomerService;
+GO
+Grant SELECT ON Participants_On_Conference TO CustomerService;
+GO
+Grant SELECT ON AvailableConferences TO CustomerService;
+GO
+Grant SELECT ON ClientInfo TO CustomerService;
+GO
+Grant SELECT ON ParticipantDataNeeded TO CustomerService;
+GO
+Grant SELECT ON WhoHasNotPaid TO CustomerService;
+GO
+
+Grant SELECT, INSERT, UPDATE ON Clients TO CustomerService
+GO
+Grant SELECT, INSERT, UPDATE ON Participants TO CustomerService
+GO
+Grant SELECT, INSERT, UPDATE ON Enrollment TO CustomerService
+GO
+
+
+create role Pani_Krysia
+Grant SELECT  ON WhoHasNotPaid
+    TO Pani_Krysia
+GO
+
+Grant select, insert, update on Payments
+    TO Pani_Krysia
+GO
+
+
+create role CleaningService
+Grant EXECUTE ON Reservations_Per_Week
+    TO CleaningService
+GO
