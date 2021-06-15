@@ -4,7 +4,7 @@ SELECT * FROM RoomReservation
 WHERE Date >= getdate() AND Date <= getdate() + 7
 
 --basic list of presenters
-CREATE VIEW BasicPresenterInfo AS
+CREATE VIEW PresentersWeHave AS
 select PresenterID, FirstName, LastName from Presenters
 
 --Participants data 
