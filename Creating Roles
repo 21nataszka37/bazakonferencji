@@ -96,7 +96,7 @@ GO
 Grant SELECT ON AvailableConferences TO Presenters;
 GO
 
-Grant SELECT, INSERT, UPDATE, DELETE ON RoomReservation
+Grant SELECT, INSERT ON RoomReservation
      TO Presenters
 GO
 GRANT SELECT ON Participants_On_Workshop TO Presenters;  
