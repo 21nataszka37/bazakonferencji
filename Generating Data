@@ -115,26 +115,26 @@ values('5', '3', '2022-01-18 10:00:00.000', '77', '99')
 
 
 --inserting Workshops
-insert into Workshops (Name, DetailsID, PresenterID, Participants, Date, Price)
-values('Dendrochronologia w Arktyce', '3', '4', '6', '2021-10-16 12:00:00.000', '77')
+insert into Workshops (Name, DetailsID, PresenterID, Participants, Date, Price, RoomReservationID)
+values('Dendrochronologia w Arktyce', '3', '4', '6', '2021-10-16 12:00:00.000', '77', '1')
 
-insert into Workshops (Name, DetailsID, PresenterID, Participants, Date, Price)
-values('DREWNO MATERIAŁ XXI WIEKU', '3', '2', '6', '2021-10-16 12:00:00.000', '77')
+insert into Workshops (Name, DetailsID, PresenterID, Participants, Date, Price, RoomReservationID)
+values('DREWNO MATERIAŁ XXI WIEKU', '3', '2', '6', '2021-10-16 12:00:00.000', '77', '2')
 
-insert into Workshops (Name, DetailsID, PresenterID, Participants, Date, Price)
-values('Lasy prywatne szanse problemy rozwiązania', '4', '4', '6', '2021-10-17 14:00:00.000', '77')
+insert into Workshops (Name, DetailsID, PresenterID, Participants, Date, Price, RoomReservationID)
+values('Lasy prywatne szanse problemy rozwiązania', '4', '4', '6', '2021-10-17 14:00:00.000', '77', '3')
 
-insert into Workshops (Name, DetailsID, PresenterID, Participants, Date, Price)
-values('Seminarium dotyczące przyszłości jesionu wyniosłego w Polsce', '5', '2', '6', '2021-10-18 14:00:00.000', '77')
+insert into Workshops (Name, DetailsID, PresenterID, Participants, Date, Price, RoomReservationID)
+values('Seminarium dotyczące przyszłości jesionu wyniosłego w Polsce', '5', '2', '6', '2021-10-18 14:00:00.000', '77', '4')
 
-insert into Workshops (Name, DetailsID, PresenterID, Participants, Date, Price)
-values('Kulturowa wartość lasu', '8', '4', '3', '2021-11-05 16:00:00.000', '100')
+insert into Workshops (Name, DetailsID, PresenterID, Participants, Date, Price, RoomReservationID)
+values('Kulturowa wartość lasu', '8', '4', '3', '2021-11-05 16:00:00.000', '100', '5')
 
-insert into Workshops (Name, DetailsID, PresenterID, Participants, Date, Price)
-values('Referat na temat Puszczy Białowieskiej', '9', '4', '3', '2021-11-06 16:00:00.000', '100')
+insert into Workshops (Name, DetailsID, PresenterID, Participants, Date, Price, RoomReservationID)
+values('Referat na temat Puszczy Białowieskiej', '9', '4', '3', '2021-11-06 16:00:00.000', '100', '6')
 
-insert into Workshops (Name, DetailsID, PresenterID, Participants, Date, Price)
-values('Zjawiska zamierania dębów w Europie', '9', '3', '3', '2021-11-06 16:00:00.000', '100')
+insert into Workshops (Name, DetailsID, PresenterID, Participants, Date, Price, RoomReservationID)
+values('Zjawiska zamierania dębów w Europie', '9', '3', '3', '2021-11-06 16:00:00.000', '100', '7')
 
 
 --inserting Participants data
